@@ -341,8 +341,9 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   position: absolute;
   top: 0;
   border-radius: 0 0 7px 7px;
-  transition: transform 70ms ease-out, box-shadow 70ms ease-out;
+  transition: transform 150ms cubic-bezier(0.3, 1.7, 0.5, 1), box-shadow 120ms ease-out;
 }
+.key.down { transition: transform 40ms ease-out, box-shadow 40ms ease-out; }
 .white {
   height: calc(100% - 8px);
   background: linear-gradient(180deg, var(--ivory-shade) 0%, var(--ivory) 7%, var(--ivory) 62%, var(--ivory-mid) 100%);
@@ -565,148 +566,324 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     }
   });
 
-  /* ---------- Sound: a small synthesized piano (no samples needed) ---------- */
+  /* ---------- Sound: a modelled grand piano (no samples to download) ----------
+     Every note is worked out once from how a struck piano string behaves, then kept as a ready-made
+     recording. Pressing a key only has to start that recording, which keeps phones fast and latency low. */
+  const touchDevice = matchMedia("(pointer: coarse)").matches;
+  const AC = window.AudioContext || window.webkitAudioContext;
   let ctx = null;
   let bus = null;
-  let noise = null;
+  let toneRate = 48000;
+  const tones = new Map(); // midi -> Float32Array (worked out) or AudioBuffer (ready to play)
   const voices = [];
-  const PARTIALS = [1, 0.42, 0.26, 0.15, 0.1, 0.065, 0.04];
 
-  function impulse(seconds, decay) {
+  // Self-contained on purpose: the same function also runs inside the background worker.
+  function renderNote(midi, rate) {
+    let seed = Math.imul(midi, 2654435761) >>> 0;
+    const rnd = () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const TAU = 2 * Math.PI;
+    const CENT = 0.00057779;
+    const oct = (midi - 60) / 12;
+    const f0 = 440 * Math.pow(2, (midi - 69) / 12 + oct * 1.5 / 1200); // octaves tuned slightly wide, as tuners do
+    const stiffness = Math.min(0.02, Math.max(7e-5, 3.8e-4 * Math.pow(2, (midi - 60) / 7.8)));
+    const strike = 0.118 - 0.022 * Math.max(0, Math.min(1, oct / 3)); // where along the string the hammer lands
+    const bright = 2600 * Math.pow(2, 0.5 * oct); // where a firm hammer blow starts losing its overtones (Hz)
+    const tilt = Math.max(0, Math.min(2.2, 0.35 + 0.75 * oct)); // higher notes are purer: the fundamental leads
+    const sustain = Math.max(2.2, 3.6 * Math.pow(2, 0.62 * oct)); // dB per second lost by the ringing string
+    const slowRate = (f) => sustain + 3.5 * Math.pow(f / 1000, 1.3); // high overtones die sooner
+    const seconds = Math.max(1.4, Math.min(6, 34 / slowRate(f0) + 0.5));
+    const N = Math.floor(seconds * rate);
+    const out = new Float32Array(N);
+    const top = Math.min(16000, rate * 0.45);
+
+    // A piano note is two or three strings tuned almost, but not quite, alike.
+    const tune2 = (0.15 + 0.25 * rnd()) * CENT;
+    const tune3 = -(0.2 + 0.3 * rnd()) * CENT;
+
+    const partials = [];
+    let strongest = 0;
+    for (let k = 1; k <= 90; k++) {
+      const f = f0 * k * Math.sqrt(1 + stiffness * k * k); // stiff strings: overtones run sharp
+      if (f > top) break;
+      const board = Math.pow(10, (rnd() - 0.5) * 0.3); // the soundboard colours each overtone a little
+      const amp = Math.sin(Math.PI * k * strike) * Math.pow(k, -1 - tilt) * Math.pow(1 + (f / bright) * (f / bright), -1.5) * board * (f * f / (f * f + 6400));
+      partials.push({ f, amp });
+      strongest = Math.max(strongest, Math.abs(amp));
+    }
+    const floor = strongest * 2.5e-4;
+
+    // Adds a decaying sine, one cheap rotation per sample.
+    const ring = (freq, amp, r, limit) => {
+      const w = TAU * freq / rate;
+      const c = r * Math.cos(w);
+      const s = r * Math.sin(w);
+      let x = amp;
+      let y = 0;
+      for (let n = 0; n < limit; n++) {
+        out[n] += y;
+        const nx = c * x - s * y;
+        y = s * x + c * y;
+        x = nx;
+      }
+    };
+
+    for (const p of partials) {
+      if (Math.abs(p.amp) < floor) continue;
+      const slow = slowRate(p.f);
+      // Loud and quick to fade at first, then a long quiet aftersound that slowly shimmers.
+      const strings = [
+        [0.5, 0, 1.9 * slow + 2],
+        [0.4, tune2 + (rnd() - 0.5) * 0.3 * CENT, slow],
+        [0.1, tune3 + (rnd() - 0.5) * 0.3 * CENT, 1.5 * slow]
+      ];
+      for (const [share, detune, fall] of strings) {
+        const amp = p.amp * share;
+        if (Math.abs(amp) < floor) continue;
+        const r = Math.pow(10, -fall / (20 * rate));
+        const limit = Math.min(N, Math.ceil(Math.log(floor / Math.abs(amp)) / Math.log(r)));
+        ring(p.f * (1 + detune), amp, r, limit);
+      }
+    }
+
+    // The hammer needs a moment to leave the string.
+    const rise = Math.max(Math.floor(rate * 0.0008), Math.floor(rate * 0.0025 * Math.pow(2, -0.4 * oct)));
+    for (let n = 0; n < rise; n++) out[n] *= 0.5 - 0.5 * Math.cos(Math.PI * n / rise);
+    let peak = 0;
+    const early = Math.min(N, Math.floor(rate * 0.06));
+    for (let n = 0; n < early; n++) peak = Math.max(peak, Math.abs(out[n]));
+
+    // The knock of the hammer travelling through the wooden soundboard.
+    const knock = peak * 0.07 * Math.pow(2, 0.5 * Math.max(0, oct));
+    for (const mode of [97, 141, 189, 236, 312, 377, 468, 590, 705]) {
+      const tau = 0.012 + 3.2 / mode;
+      const amp = knock * (0.5 + rnd()) / 3 * (rnd() < 0.5 ? -1 : 1);
+      ring(mode, amp, Math.exp(-1 / (tau * rate)), Math.min(N, Math.ceil(tau * rate * 7)));
+    }
+
+    // The felt touching the string: a very short breath of noise.
+    const hiss = peak * 0.066 * Math.pow(2, 0.4 * Math.max(0, oct));
+    const k1 = 1 - Math.exp(-TAU * 6500 / rate);
+    const k2 = 1 - Math.exp(-TAU * 1300 / rate);
+    let lo1 = 0;
+    let lo2 = 0;
+    const noiseEnd = Math.min(N, Math.floor(rate * 0.045));
+    for (let n = 0; n < noiseEnd; n++) {
+      const white = rnd() * 2 - 1;
+      lo1 += k1 * (white - lo1);
+      lo2 += k2 * (white - lo2);
+      const t = n / rate;
+      out[n] += hiss * (lo1 - lo2) * (1 - Math.exp(-t / 0.0006)) * Math.exp(-t / 0.007);
+    }
+
+    const fade = Math.floor(Math.min(0.8, seconds * 0.25) * rate);
+    for (let n = N - fade; n < N; n++) out[n] *= 0.5 + 0.5 * Math.cos(Math.PI * (n - (N - fade)) / fade);
+
+    // Even loudness from key to key.
+    const span = Math.min(N, Math.floor(rate * 0.25));
+    let power = 0;
+    for (let n = 0; n < span; n++) power += out[n] * out[n];
+    const level = 0.2 * Math.pow(2, -0.17 * Math.max(-1.5, Math.min(3, oct))) / Math.sqrt(power / span);
+    for (let n = 0; n < N; n++) out[n] *= level;
+    return out;
+  }
+
+  /* Notes are prepared in the background as soon as the page opens, nearest the middle first. */
+  const queued = new Set();
+  let worker = null;
+  let workerOk = typeof Worker === "function";
+  let idleTimer = 0;
+
+  function renderIdle() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      const midi = queued.values().next().value;
+      if (midi === undefined) return;
+      queued.delete(midi);
+      if (!tones.has(midi)) tones.set(midi, renderNote(midi, toneRate));
+      if (queued.size) renderIdle();
+    }, 40);
+  }
+
+  function workerFailed() {
+    workerOk = false;
+    if (worker) { try { worker.terminate(); } catch (err) { /* already gone */ } }
+    worker = null;
+    if (queued.size) renderIdle();
+  }
+
+  function prepare(notes) {
+    const todo = notes.filter((m) => !tones.has(m) && !queued.has(m));
+    if (!todo.length) return;
+    todo.forEach((m) => queued.add(m));
+    if (workerOk && !worker) {
+      try {
+        const source = `${renderNote.toString()}
+          onmessage = (e) => {
+            for (const midi of e.data.notes) {
+              const data = renderNote(midi, e.data.rate);
+              postMessage({ midi, data }, [data.buffer]);
+            }
+          };`;
+        worker = new Worker(URL.createObjectURL(new Blob([source], { type: "text/javascript" })));
+        worker.onmessage = (e) => {
+          queued.delete(e.data.midi);
+          if (!tones.has(e.data.midi)) tones.set(e.data.midi, e.data.data);
+        };
+        worker.onerror = workerFailed;
+      } catch (err) {
+        workerFailed();
+        return;
+      }
+    }
+    if (worker) worker.postMessage({ notes: todo, rate: toneRate });
+    else renderIdle();
+  }
+
+  function toneFor(midi) {
+    let tone = tones.get(midi);
+    if (!tone) tone = renderNote(midi, toneRate); // struck before its turn came: work it out right now
+    if (tone instanceof Float32Array) {
+      const buffer = ctx.createBuffer(1, tone.length, toneRate);
+      buffer.getChannelData(0).set(tone);
+      tone = buffer;
+      tones.set(midi, tone);
+    }
+    return tone;
+  }
+
+  // The room around the piano: a few close reflections and a short, dark tail. No concert hall.
+  function roomImpulse() {
     const rate = ctx.sampleRate;
-    const length = Math.floor(rate * seconds);
+    const length = Math.floor(rate * 0.4);
     const buffer = ctx.createBuffer(2, length, rate);
     for (let ch = 0; ch < 2; ch++) {
       const data = buffer.getChannelData(ch);
-      for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+      for (let i = 0; i < 9; i++) {
+        const at = Math.floor(rate * (0.004 + 0.05 * Math.pow((i + Math.random()) / 9, 1.4)));
+        data[at] += (Math.random() < 0.5 ? -1 : 1) * 0.7 * Math.pow(0.78, i);
+      }
+      const from = Math.floor(rate * 0.012);
+      let low = 0;
+      for (let i = from; i < length; i++) {
+        low += 0.35 * (Math.random() * 2 - 1 - low);
+        data[i] += low * 0.22 * Math.exp(-(i - from) / (rate * 0.065));
+      }
+      let energy = 0;
+      for (let i = 0; i < length; i++) energy += data[i] * data[i];
+      const scale = 1 / Math.sqrt(energy);
+      for (let i = 0; i < length; i++) data[i] *= scale;
     }
     return buffer;
   }
 
-  function ensureAudio() {
-    if (!ctx) {
-      try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (err) { /* older Safari */ }
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      try { ctx = new AC({ latencyHint: "interactive" }); } catch (err) { ctx = new AC(); }
-
-      const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -16;
-      comp.knee.value = 20;
-      comp.ratio.value = 3;
-      comp.attack.value = 0.003;
-      comp.release.value = 0.25;
-      comp.connect(ctx.destination);
-
-      bus = ctx.createGain();
-      bus.gain.value = 0.85;
-      const dry = ctx.createGain();
-      dry.gain.value = 0.9;
-      const wet = ctx.createGain();
-      wet.gain.value = 0.3;
-      const room = ctx.createConvolver();
-      room.buffer = impulse(2.8, 2.6);
-      bus.connect(dry);
-      dry.connect(comp);
-      bus.connect(room);
-      room.connect(wet);
-      wet.connect(comp);
-
-      noise = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.08), ctx.sampleRate);
-      const n = noise.getChannelData(0);
-      for (let i = 0; i < n.length; i++) n[i] = Math.random() * 2 - 1;
+  function createAudio() {
+    if (ctx || !AC) return;
+    try { if (navigator.audioSession) navigator.audioSession.type = "playback"; } catch (err) { /* older Safari */ }
+    try { ctx = new AC({ latencyHint: "interactive" }); } catch (err) {
+      try { ctx = new AC(); } catch (err2) { ctx = null; return; }
     }
-    if (ctx.state !== "running") ctx.resume().catch(() => {});
+
+    // Loud chords round off gently instead of crackling. Single notes pass through untouched.
+    const clip = ctx.createWaveShaper();
+    const curve = new Float32Array(1025);
+    for (let i = 0; i < curve.length; i++) {
+      const x = (i / 512 - 1) * 2;
+      const a = Math.abs(x);
+      curve[i] = Math.sign(x) * (a < 0.6 ? a : 0.6 + 0.4 * Math.tanh((a - 0.6) / 0.4));
+    }
+    clip.curve = curve;
+    const master = ctx.createGain();
+    master.gain.value = 0.5; // the curve above spans twice full scale
+    master.connect(clip);
+    clip.connect(ctx.destination);
+
+    bus = ctx.createGain();
+    bus.connect(master);
+    const room = ctx.createConvolver();
+    room.normalize = false;
+    room.buffer = roomImpulse();
+    const wet = ctx.createGain();
+    wet.gain.value = touchDevice ? 0.13 : 0.2;
+    bus.connect(room);
+    room.connect(wet);
+    wet.connect(master);
   }
+
+  function ensureAudio() {
+    createAudio();
+    if (ctx && ctx.state !== "running") ctx.resume().catch(() => {});
+  }
+  // Built up front (it stays silent until the first touch) so the first key press has nothing to wait for.
+  createAudio();
+  if (ctx) toneRate = ctx.sampleRate;
+
   // iOS only unlocks audio when the finger lifts.
   const unlock = () => { if (ctx && ctx.state !== "running") ctx.resume().catch(() => {}); };
   document.addEventListener("touchend", unlock, { passive: true });
   document.addEventListener("pointerup", unlock);
 
   function damp(voice, at, tau) {
+    if (voice.damped) return;
     voice.damped = true;
     voice.out.gain.setTargetAtTime(0, at, tau);
-    voice.oscs.forEach((o) => { try { o.stop(at + tau * 6); } catch (err) { /* already stopped */ } });
+    try { voice.src.stop(at + tau * 8); } catch (err) { /* already stopped */ }
   }
 
   function playNote(midi, velocity) {
     if (!ctx) return;
-    const t = ctx.currentTime + 0.003;
-    const f0 = 440 * Math.pow(2, (midi - 69) / 12);
+    const tone = toneFor(midi);
+    const t = ctx.currentTime;
+    const v = Math.max(0.3, Math.min(1, velocity));
 
-    // Striking the same key again damps the string that was still ringing.
-    voices.forEach((v) => { if (v.midi === midi && !v.damped) damp(v, t, 0.05); });
+    // Striking the same key again: the hammer takes over the string that was still ringing.
+    voices.forEach((voice) => { if (voice.midi === midi) damp(voice, t, 0.06); });
+
+    const src = ctx.createBufferSource();
+    src.buffer = tone;
+
+    // A softer touch is not just quieter, it is rounder: the felt has more time to give.
+    const soft = ctx.createBiquadFilter();
+    soft.type = "lowpass";
+    soft.Q.value = -5;
+    soft.frequency.value = Math.min(ctx.sampleRate * 0.45, 20000 * Math.pow(2, (midi - 60) / 24 - (1 - v) * 8));
 
     const out = ctx.createGain();
-    out.gain.value = 0.17 * velocity;
-    if (ctx.createStereoPanner) {
+    out.gain.setValueAtTime(0.9 * Math.pow(v, 1.6), t);
+    src.connect(soft);
+    soft.connect(out);
+    // Low notes a little to the left, as from the bench. Phones stay centred: their two speakers are too unequal.
+    if (!touchDevice && ctx.createStereoPanner) {
       const pan = ctx.createStereoPanner();
-      pan.pan.value = Math.max(-0.6, Math.min(0.6, (midi - 64) / 36));
+      pan.pan.value = Math.max(-0.35, Math.min(0.35, (midi - 64) / 40));
       out.connect(pan);
       pan.connect(bus);
     } else {
       out.connect(bus);
     }
+    src.start(t);
 
-    const tone = ctx.createBiquadFilter();
-    tone.type = "lowpass";
-    tone.Q.value = 0.4;
-    tone.frequency.setValueAtTime(Math.min(14000, f0 * (5 + 9 * velocity)), t);
-    tone.frequency.setTargetAtTime(Math.max(f0 * 2.2, 500), t + 0.02, 0.5);
-    tone.connect(out);
-
-    const life = Math.max(1.3, Math.min(4.2, 4.6 - (midi - 36) * 0.06));
-    const inharmonic = 0.00018 * Math.pow(2, (midi - 60) / 24);
-    const count = midi < 72 ? PARTIALS.length : midi < 84 ? 5 : 3;
-    const oscs = [];
-    for (let k = 1; k <= count; k++) {
-      const fk = f0 * k * Math.sqrt(1 + inharmonic * k * k);
-      if (fk > 15000) break;
-      const osc = ctx.createOscillator();
-      osc.frequency.value = fk;
-      osc.detune.value = (Math.random() - 0.5) * (k === 1 ? 2 : 4);
-      const g = ctx.createGain();
-      const amp = PARTIALS[k - 1] * (k === 1 ? 1 : 0.55 + 0.45 * velocity);
-      const prompt = 0.06 + 0.02 * k;
-      const after = (life / 3.2) / (1 + 0.45 * (k - 1));
-      g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(amp, t + 0.004);
-      g.gain.setTargetAtTime(amp * 0.42, t + 0.004, prompt);
-      g.gain.setTargetAtTime(0, t + 0.18, after);
-      osc.connect(g);
-      g.connect(tone);
-      osc.start(t);
-      osc.stop(t + life + 0.3);
-      oscs.push(osc);
-    }
-
-    // The hammer hitting the string.
-    const hammer = ctx.createBufferSource();
-    hammer.buffer = noise;
-    const hf = ctx.createBiquadFilter();
-    hf.type = "bandpass";
-    hf.frequency.value = Math.min(4200, f0 * 6);
-    hf.Q.value = 0.9;
-    const hg = ctx.createGain();
-    hg.gain.setValueAtTime(0.22 * velocity, t);
-    hg.gain.exponentialRampToValueAtTime(0.0001, t + 0.045);
-    hammer.connect(hf);
-    hf.connect(hg);
-    hg.connect(out);
-    hammer.start(t);
-    hammer.stop(t + 0.07);
-
-    const voice = { midi, out, oscs, damped: false };
+    const voice = { midi, src, out, born: t, damped: false };
     voices.push(voice);
-    if (oscs.length) {
-      oscs[0].onended = () => {
-        const i = voices.indexOf(voice);
-        if (i >= 0) voices.splice(i, 1);
-        try { out.disconnect(); } catch (err) { /* already gone */ }
-      };
-    }
-    const ringing = voices.filter((v) => !v.damped);
-    if (ringing.length > 20) damp(ringing[0], t, 0.08);
+    src.onended = () => {
+      const i = voices.indexOf(voice);
+      if (i >= 0) voices.splice(i, 1);
+      try { out.disconnect(); } catch (err) { /* already gone */ }
+    };
+    const ringing = voices.filter((other) => !other.damped);
+    if (ringing.length > 24) damp(ringing[0], t, 0.08);
+  }
+
+  // Lifting the finger lowers the felt damper back onto the string.
+  function releaseNote(midi) {
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const tau = 0.2 * Math.pow(2, -(midi - 60) / 48);
+    voices.forEach((voice) => { if (voice.midi === midi) damp(voice, Math.max(now, voice.born + 0.09), tau); });
   }
 
   /* ---------- Keyboard layout ---------- */
@@ -773,6 +950,9 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
       if (isDo) label.append("Do");
       el.append(label);
     });
+
+    const middle = midiOfWhite(start + Math.floor(count / 2));
+    prepare([...keys.keys()].sort((a, b) => Math.abs(a - middle) - Math.abs(b - middle)));
   }
 
   function layout() {
@@ -793,18 +973,33 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   function strike(midi, velocity, opts = {}) {
     if (!keys.has(midi)) return;
     holds.set(midi, (holds.get(midi) || 0) + 1);
+    if (opts.silent) { setDown(midi, true); return; }
+    playNote(midi, velocity); // sound first, pictures after
     setDown(midi, true);
-    if (opts.silent) return;
-    playNote(midi, velocity);
     sparkle(midi);
-    if (!opts.replay) record(midi);
+    if (!opts.replay) record(midi, velocity);
   }
 
   function lift(midi) {
     const left = (holds.get(midi) || 1) - 1;
     if (left > 0) { holds.set(midi, left); return; }
     holds.delete(midi);
+    releaseNote(midi);
+    const open = openNotes.get(midi);
+    if (open) { open.held = performance.now() - open.t; openNotes.delete(midi); }
     setTimeout(() => { if (!holds.has(midi)) setDown(midi, false); }, 70);
+  }
+
+  // Like a real key, the touch decides the tone: near the front edge it speaks out, further up it is gentler.
+  function touchVelocity(keyEl, y) {
+    const r = keyEl.getBoundingClientRect();
+    const along = (y - r.top) / r.height;
+    const depth = keyEl.classList.contains("black") ? along : (along - 0.3) / 0.65;
+    return 0.62 + 0.36 * Math.max(0, Math.min(1, depth)) + (Math.random() - 0.5) * 0.04;
+  }
+
+  function tick() {
+    try { if (navigator.vibrate) navigator.vibrate(7); } catch (err) { /* no haptics here */ }
   }
 
   const GLYPHS = ["♪", "♫", "♩", "♬"];
@@ -844,12 +1039,15 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   /* ---------- "Your melody" ---------- */
   let take = [];
   let lastTake = [];
+  const openNotes = new Map(); // midi -> the recorded note still being held
   let takeTimer = 0;
   let replaying = false;
 
-  function record(midi) {
+  function record(midi, velocity) {
     if (replaying) return;
-    take.push({ midi, t: performance.now() });
+    const note = { midi, velocity, t: performance.now(), held: 0 };
+    take.push(note);
+    openNotes.set(midi, note);
     clearTimeout(takeTimer);
     takeTimer = setTimeout(() => {
       if (take.length >= 5) showTake(take);
@@ -875,8 +1073,8 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     lastTake.forEach((note, i) => {
       if (i) at += Math.min(Math.max(note.t - lastTake[i - 1].t, 90), 900);
       setTimeout(() => {
-        strike(note.midi, 0.8, { replay: true });
-        setTimeout(() => lift(note.midi), 200);
+        strike(note.midi, note.velocity || 0.85, { replay: true });
+        setTimeout(() => lift(note.midi), Math.min(Math.max(note.held || 350, 110), 3000));
       }, at);
     });
     setTimeout(() => { replaying = false; }, at + 500);
@@ -956,7 +1154,8 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     wake();
     const midi = Number(k.dataset.midi);
     active.set(e.pointerId, midi);
-    strike(midi, e.pointerType === "mouse" ? 0.78 : 0.86);
+    strike(midi, touchVelocity(k, e.clientY));
+    if (e.pointerType === "touch") tick();
   });
   keysEl.addEventListener("pointermove", (e) => {
     if (!active.has(e.pointerId)) return;
@@ -964,7 +1163,10 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     const prev = active.get(e.pointerId);
     if (midi === prev) return;
     if (prev != null) lift(prev);
-    if (midi != null) strike(midi, 0.72);
+    if (midi != null) {
+      strike(midi, 0.7 + Math.random() * 0.08); // a finger sliding across the keys plays lighter
+      if (e.pointerType === "touch") tick();
+    }
     active.set(e.pointerId, midi);
   });
   const endPointer = (e) => {
@@ -984,7 +1186,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     if (n < 0 || !keys.has(60 + n)) return;
     e.preventDefault();
     wake();
-    strike(60 + n, 0.8);
+    strike(60 + n, 0.82 + Math.random() * 0.1);
   });
   addEventListener("keyup", (e) => {
     const n = CODES.indexOf(e.code);
