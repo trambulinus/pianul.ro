@@ -500,7 +500,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
           <p class="contact">
             <span class="num" id="num">0750 199 672</span>
             <button class="copy-btn" id="copy" type="button">Copiază</button>
-            <a class="mail" href="mailto:vladp3004@yahoo.com">vladp3004@yahoo.com</a>
+            <a class="mail" href="mailto:vlad@pianul.ro">vlad@pianul.ro</a>
           </p>
         </div>
       </div>
@@ -586,13 +586,13 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
 
   // Self-contained on purpose: the same function also runs inside the background worker.
   function renderNote(midi, rate) {
-    let seed = Math.imul(midi, 2654435761) >>> 0;
-    const rnd = () => {
+    const random = (seed) => () => {
       seed = (seed + 0x6D2B79F5) | 0;
       let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
       t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
       return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
     };
+    const rnd = random(Math.imul(midi, 2654435761) >>> 0);
     const TAU = 2 * Math.PI;
     const CENT = 0.00057779;
     const oct = (midi - 60) / 12;
@@ -612,25 +612,64 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     const tune2 = (0.15 + 0.25 * rnd()) * CENT;
     const tune3 = -(0.2 + 0.3 * rnd()) * CENT;
 
+    // The wooden body. Strings alone are thin; what you hear is the soundboard they set in motion.
+    // It is one fixed set of resonances shared by every note, which is what makes it sound like one
+    // instrument made of one piece of wood rather than a row of separate tones.
+    const wood = random(20261113);
+    const body = [];
+    for (let i = 0; i < 36; i++) {
+      const f = 85 * Math.pow(2, (i + 0.7 * (wood() - 0.5)) / 5.6);
+      const q = (f < 600 ? 15 : 10) + 9 * wood();
+      const gain = (0.2 + 0.25 * wood()) * (wood() < 0.5 ? -0.6 : 1) * (f > 180 && f < 800 ? 1.2 : 1); // some resonances lift a tone, some hold it back
+      const alpha = Math.PI * f / q;
+      const w2 = TAU * f * TAU * f;
+      body.push({ f, gain, alpha, w2, wd: Math.sqrt(w2 - alpha * alpha), re: 0, im: 0 });
+    }
+    const DIRECT = 0.9;
+    // What the body does to one decaying sine (amplitude amp, decay sigma, angular frequency w):
+    // returns the sine as it comes out, and notes down how hard each resonance is set ringing by its start.
+    const through = (amp, sigma, w) => {
+      let gr = DIRECT;
+      let gi = 0;
+      for (const m of body) {
+        const dr = sigma * sigma - w * w - 2 * m.alpha * sigma + m.w2;
+        const di = 2 * w * (m.alpha - sigma);
+        const nr = -2 * m.alpha * sigma;
+        const ni = 2 * m.alpha * w;
+        const dd = dr * dr + di * di;
+        gr += m.gain * (nr * dr + ni * di) / dd;
+        gi += m.gain * (ni * dr - nr * di) / dd;
+        const e = sigma - m.alpha;
+        const u1 = m.wd - w;
+        const u2 = m.wd + w;
+        const q1 = e * e + u1 * u1;
+        const q2 = e * e + u2 * u2;
+        const tr = e / q1 - e / q2;
+        const ti = u2 / q2 - u1 / q1;
+        const ai = m.alpha * m.alpha / m.wd;
+        m.re += amp * m.gain * (m.alpha * tr - ai * ti);
+        m.im += amp * m.gain * (m.alpha * ti + ai * tr);
+      }
+      return [amp * gr, amp * gi];
+    };
+
     const partials = [];
     let strongest = 0;
     for (let k = 1; k <= 90; k++) {
       const f = f0 * k * Math.sqrt(1 + stiffness * k * k); // stiff strings: overtones run sharp
       if (f > top) break;
-      const board = Math.pow(10, (rnd() - 0.5) * 0.3); // the soundboard colours each overtone a little
-      const amp = Math.sin(Math.PI * k * strike) * Math.pow(k, -1 - tilt) * Math.pow(1 + (f / bright) * (f / bright), -1.5) * board * (f * f / (f * f + 6400));
+      const amp = Math.sin(Math.PI * k * strike) * Math.pow(k, -1 - tilt) * Math.pow(1 + (f / bright) * (f / bright), -1.5) * (f * f / (f * f + 6400));
       partials.push({ f, amp });
       strongest = Math.max(strongest, Math.abs(amp));
     }
     const floor = strongest * 2.5e-4;
 
-    // Adds a decaying sine, one cheap rotation per sample.
-    const ring = (freq, amp, r, limit) => {
-      const w = TAU * freq / rate;
+    // Adds a decaying sine, one cheap rotation per sample. w is in radians per sample.
+    const ring = (w, re, im, r, limit) => {
       const c = r * Math.cos(w);
       const s = r * Math.sin(w);
-      let x = amp;
-      let y = 0;
+      let x = re;
+      let y = im;
       for (let n = 0; n < limit; n++) {
         out[n] += y;
         const nx = c * x - s * y;
@@ -649,12 +688,18 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
         [0.1, tune3 + (rnd() - 0.5) * 0.3 * CENT, 1.5 * slow]
       ];
       for (const [share, detune, fall] of strings) {
-        const amp = p.amp * share;
-        if (Math.abs(amp) < floor) continue;
+        if (Math.abs(p.amp * share) < floor) continue;
+        const w = TAU * p.f * (1 + detune);
+        const [re, im] = through(p.amp * share, fall * 0.115129, w);
+        const size = Math.hypot(re, im);
+        if (size < floor) continue;
         const r = Math.pow(10, -fall / (20 * rate));
-        const limit = Math.min(N, Math.ceil(Math.log(floor / Math.abs(amp)) / Math.log(r)));
-        ring(p.f * (1 + detune), amp, r, limit);
+        ring(w / rate, re, im, r, Math.min(N, Math.ceil(Math.log(floor / size) / Math.log(r))));
       }
+    }
+    // The body answering the start of the note.
+    for (const m of body) {
+      ring(m.wd / rate, m.re, m.im, Math.exp(-m.alpha / rate), Math.min(N, Math.ceil(7 * rate / m.alpha)));
     }
 
     // The hammer needs a moment to leave the string.
@@ -664,13 +709,12 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     const early = Math.min(N, Math.floor(rate * 0.06));
     for (let n = 0; n < early; n++) peak = Math.max(peak, Math.abs(out[n]));
 
-    // The knock of the hammer travelling through the wooden soundboard.
-    const knock = peak * 0.07 * Math.pow(2, 0.5 * Math.max(0, oct));
-    for (const mode of [97, 141, 189, 236, 312, 377, 468, 590, 705]) {
-      const tau = 0.012 + 3.2 / mode;
-      const amp = knock * (0.5 + rnd()) / 3 * (rnd() < 0.5 ? -1 : 1);
-      ring(mode, amp, Math.exp(-1 / (tau * rate)), Math.min(N, Math.ceil(tau * rate * 7)));
-    }
+    // The knock of the hammer blow itself, carried by the same wood.
+    const blows = body.map((m) => Math.abs(m.gain) * (m.f / (m.f + 150)) / (1 + (m.f / 800) * (m.f / 800)) * (0.5 + rnd()) * (rnd() < 0.5 ? -1 : 1));
+    const knock = peak * 0.1 * Math.pow(2, 0.5 * Math.max(0, oct)) / Math.sqrt(blows.reduce((sum, b) => sum + b * b, 0));
+    body.forEach((m, i) => {
+      ring(m.wd / rate, knock * blows[i], 0, Math.exp(-m.alpha / rate), Math.min(N, Math.ceil(7 * rate / m.alpha)));
+    });
 
     // The felt touching the string: a very short breath of noise.
     const hiss = peak * 0.066 * Math.pow(2, 0.4 * Math.max(0, oct));
@@ -857,7 +901,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     const soft = ctx.createBiquadFilter();
     soft.type = "lowpass";
     soft.Q.value = -5;
-    soft.frequency.value = Math.min(ctx.sampleRate * 0.45, 20000 * Math.pow(2, (midi - 60) / 24 - (1 - v) * 8));
+    soft.frequency.setValueAtTime(Math.min(ctx.sampleRate * 0.45, 20000 * Math.pow(2, (midi - 60) / 24 - (1 - v) * 8)), t);
 
     const out = ctx.createGain();
     out.gain.setValueAtTime(1.2 * Math.pow(v, 1.6), t); // the touch is soft by design, so the level is made up here
@@ -874,7 +918,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     }
     src.start(t);
 
-    const voice = { midi, src, out, born: t, damped: false };
+    const voice = { midi, src, out, soft, born: t, damped: false };
     voices.push(voice);
     src.onended = () => {
       const i = voices.indexOf(voice);
@@ -885,12 +929,128 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     if (ringing.length > 24) damp(ringing[0], t, 0.08);
   }
 
+  /* The key coming back up. You hear three things: the felt damper settling on the string, the small
+     click of the mechanism resetting, and the wood of the key landing on its rest. All keys are built
+     from one recipe (the one that sounded best by ear, originally the D# above the middle octave), each
+     nudged only slightly so that no two are exact copies. */
+  const RELEASE_LEVEL = 0.11;
+  const KEY_UP = {
+    felt: 1.178319, // how strongly the damper brushes the string
+    centre: 715.449921, // where that brush sits (Hz)
+    feltFade: 0.01894, // how quickly it is over (s)
+    landing: 0.045448, // when the key reaches the top (s)
+    wood: [[771.001631, 0.373828], [677.033651, 0.325126], [348.296869, -0.310419], [544.022273, 0.383548], [523.498922, 0.399373], [766.471937, 0.203915]], // the knock of the landing: [Hz, strength]
+    click: 0.258451,
+    clickTone: 2422.169807,
+    lead: 0.001857, // the click comes this much before the landing (s)
+    voice: 0.75
+  };
+  const releases = new Map();
+  function releaseSound(midi) {
+    let buffer = releases.get(midi);
+    if (buffer) return buffer;
+    const random = (seed) => () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    const rnd = random(Math.imul(75 + 977, 2246822519) >>> 0); // the breath and the click themselves
+    const own = random(Math.imul(midi + 977, 2246822519) >>> 0); // this key's small differences
+    const vary = (spread) => (midi === 75 ? 1 : 1 + spread * (own() * 2 - 1));
+    const skip = (count) => { for (let i = 0; i < count; i++) rnd(); };
+    const TAU = 2 * Math.PI;
+    const rate = ctx.sampleRate;
+    const N = Math.floor(rate * 0.22);
+    buffer = ctx.createBuffer(1, N, rate);
+    const data = buffer.getChannelData(0);
+    const pole = (hz) => 1 - Math.exp(-TAU * hz / rate);
+
+    // Felt on a string that is still moving: a soft, breathy brush.
+    const felt = KEY_UP.felt * vary(0.1);
+    const centre = KEY_UP.centre * vary(0.05);
+    const feltFade = KEY_UP.feltFade * vary(0.08);
+    skip(3);
+    const a1 = pole(centre * 1.9);
+    const a2 = pole(centre * 0.55);
+    let l1 = 0;
+    let l2 = 0;
+    for (let n = 0; n < N; n++) {
+      const white = rnd() * 2 - 1;
+      l1 += a1 * (white - l1);
+      l2 += a2 * (white - l2);
+      const t = n / rate;
+      data[n] = felt * 1.6 * (l1 - l2) * (1 - Math.exp(-t / 0.004)) * Math.exp(-t / feltFade);
+    }
+
+    // A moment later the key reaches the top: wood on felt-covered wood.
+    const landing = KEY_UP.landing + 0.003 * (vary(1) - 1);
+    const from = Math.floor(landing * rate);
+    for (const [tone, strength] of KEY_UP.wood) {
+      const hz = tone * vary(0.03);
+      const amp = strength * vary(0.12);
+      const fade = 0.005 + 2.4 / hz;
+      const span = Math.min(N - from, Math.floor(fade * 7 * rate));
+      for (let n = 0; n < span; n++) {
+        const t = n / rate;
+        data[from + n] += amp * Math.sin(TAU * hz * t) * Math.exp(-t / fade);
+      }
+    }
+    skip(24);
+
+    // And the mechanism dropping back into place: a small dry click.
+    const click = KEY_UP.click * vary(0.15);
+    const c1 = pole(4800);
+    const c2 = pole(KEY_UP.clickTone * vary(0.04));
+    const before = Math.max(0, from - Math.floor(rate * KEY_UP.lead));
+    const clickSpan = Math.min(N - before, Math.floor(rate * 0.02));
+    l1 = 0;
+    l2 = 0;
+    for (let n = 0; n < clickSpan; n++) {
+      const white = rnd() * 2 - 1;
+      l1 += c1 * (white - l1);
+      l2 += c2 * (white - l2);
+      const t = n / rate;
+      data[before + n] += click * 1.8 * (l1 - l2) * (1 - Math.exp(-t / 0.0003)) * Math.exp(-t / 0.0028);
+    }
+
+    let peak = 0;
+    for (let n = 0; n < N; n++) peak = Math.max(peak, Math.abs(data[n]));
+    const voice = KEY_UP.voice * vary(0.1) / peak;
+    const tail = Math.floor(rate * 0.02);
+    for (let n = 0; n < N; n++) data[n] *= voice * (n > N - tail ? (N - n) / tail : 1);
+    releases.set(midi, buffer);
+    return buffer;
+  }
+
+  function playRelease(midi, at, age) {
+    const src = ctx.createBufferSource();
+    src.buffer = releaseSound(midi);
+    // No two lifts are alike either: quicker or lazier, firmer or gentler.
+    src.playbackRate.value = 0.9 + 0.2 * Math.random();
+    const out = ctx.createGain();
+    const still = 0.75 + 0.25 * Math.exp(-age / 1.5); // a string that still rings loudly brushes the felt harder
+    out.gain.value = RELEASE_LEVEL * (0.6 + 0.4 * Math.random() * Math.random() + 0.2 * Math.random()) * still;
+    src.connect(out);
+    out.connect(bus);
+    src.onended = () => { try { out.disconnect(); } catch (err) { /* already gone */ } };
+    src.start(at);
+  }
+
   // Lifting the finger lowers the felt damper back onto the string.
   function releaseNote(midi) {
     if (!ctx) return;
     const now = ctx.currentTime;
     const tau = 0.2 * Math.pow(2, -(midi - 60) / 48);
-    voices.forEach((voice) => { if (voice.midi === midi) damp(voice, Math.max(now, voice.born + 0.09), tau); });
+    let heard = false;
+    voices.forEach((voice) => {
+      if (voice.midi !== midi || voice.damped) return;
+      const at = Math.max(now, voice.born + 0.09);
+      damp(voice, at, tau);
+      voice.soft.frequency.setTargetAtTime(350, at, tau * 1.2); // felt takes the shine off first, the body of the tone last
+      if (!heard) playRelease(midi, at, at - voice.born);
+      heard = true;
+    });
   }
 
   /* ---------- Keyboard layout ---------- */
