@@ -337,6 +337,8 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
   color: var(--text);
   padding-inline: 14px; /* lines up with the text inside the panels */
 }
+/* The display type draws its hyphen as a hairline; this one is thickened so "să-l" reads as two words joined. */
+.hy { -webkit-text-stroke: 0.9px currentColor; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .btn {
   display: inline-flex;
@@ -755,7 +757,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
         <div class="pitch" id="pitch">
           <div class="say">
             <p class="lede" id="lede">Salut, sunt Vlad și dau lecții de pian. Te învăț partituri, te învăț și niște Bach. Dar mai presus de toate, te învăț să cânți ce simți, ce gândești și cine ești. Un univers numai al tău.</p>
-            <p class="cta-lead" id="lead">Hai să-l construim împreună.</p>
+            <p class="cta-lead" id="lead">Hai să<span class="hy">-</span>l construim împreună.</p>
             <div class="take" id="take" role="status" hidden>
               <button class="take-close" id="takeClose" type="button" aria-label="Închide"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
               <p class="take-notes" id="takeNotes"></p>
@@ -809,7 +811,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
       what: "Lecții de pian",
       where: "București",
       lede: "Salut, sunt Vlad și dau lecții de pian. Te învăț partituri, te învăț și niște Bach. Dar mai presus de toate, te învăț să cânți ce simți, ce gândești și cine ești. Un univers numai al tău.",
-      lead: "Hai să-l construim împreună.",
+      lead: 'Hai să<span class="hy">-</span>l construim împreună.',
       wa: '<span class="wide">Scrie-mi pe </span>WhatsApp',
       call: "Sună-mă",
       copy: "Copiază",
@@ -892,7 +894,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
     $("what").textContent = w.what;
     $("where").textContent = w.where;
     $("lede").textContent = w.lede;
-    $("lead").textContent = w.lead;
+    $("lead").innerHTML = w.lead;
     $("waText").innerHTML = w.wa;
     $("call").textContent = w.call;
     $("copy").textContent = w.copy;
