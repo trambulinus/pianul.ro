@@ -12,9 +12,31 @@
 <meta name="format-detection" content="telephone=no">
 <meta property="og:title" content="Lecții de pian cu Vlad">
 <meta property="og:description" content="Pe Bach îl poate cânta oricine. Pe tine, doar tu.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pianul.ro/">
+<meta property="og:image" content="https://pianul.ro/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230f0e12'/%3E%3Crect x='5' y='6' width='6' height='20' rx='1.5' fill='%23f8f3e8'/%3E%3Crect x='13' y='6' width='6' height='20' rx='1.5' fill='%23f8f3e8'/%3E%3Crect x='21' y='6' width='6' height='20' rx='1.5' fill='%23f8f3e8'/%3E%3Crect x='9' y='6' width='4' height='12' rx='1' fill='%230f0e12'/%3E%3Crect x='19' y='6' width='4' height='12' rx='1' fill='%230f0e12'/%3E%3C/svg%3E">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}</style>
 <title>Lecții de pian cu Vlad</title>
+<script>
+/* The finish is light unless the visitor picked dark with the switch (remembered on their phone).
+   ?theme=dark or ?theme=light in the address wins over both. Set here so the first paint is already right. */
+window.setTheme = (theme) => {
+  const light = theme !== "dark";
+  document.documentElement.dataset.theme = light ? "light" : "dark";
+  document.querySelector('meta[name="theme-color"]').content = light ? "#fdfbf7" : "#060508";
+  document.querySelector('meta[name="color-scheme"]').content = light ? "light" : "dark";
+};
+(() => {
+  let saved = null;
+  try { saved = localStorage.getItem("theme"); } catch (err) { /* storage is off */ }
+  const asked = new URLSearchParams(location.search).get("theme");
+  window.setTheme(asked === "dark" || asked === "light" ? asked : saved || "light");
+})();
+</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="Lecții de pian în București cu Vlad: partituri, improvizație și compoziție, ca să cânți liber și să te exprimi.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -56,18 +78,87 @@
   --font-display: "Bodoni Moda", "Bodoni 72", Didot, Georgia, "Times New Roman", serif;
   --font-body: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   --font-glyph: "Apple Symbols", "Segoe UI Symbol", "Noto Music", "DejaVu Sans", var(--font-body);
+  /* Roles. The dark piano is the default; the daylight palette below only swaps these. */
+  --page: var(--lacquer-deep);
+  --board-top: var(--lacquer);
+  --board-bottom: var(--lacquer-deep);
+  --accent: var(--gold-hi);
+  --brand-hi: var(--gold-hi);
+  --brand-mid: var(--gold);
+  --brand-lo: var(--gold-lo);
+  /* Panels: slabs of the lacquer itself, clear enough for the mirrored keys to show through. */
+  --panel: linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.03));
+  --panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 4px 0 0 rgba(0, 0, 0, 0.6), 0 12px 16px -10px rgba(0, 0, 0, 0.7);
+  --take: #17161c;
+  --take-line: rgba(212, 173, 102, 0.5);
+  --take-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), 0 4px 0 0 #000, 0 14px 22px -10px rgba(0, 0, 0, 0.85);
+  --fill: transparent;
+  --fill-line: var(--line);
+  --btn-text: var(--text-soft);
+  --gold-top: var(--gold-hi);
+  --gold-bottom: var(--gold-lo);
+  --gold-edge: transparent;
+  --gold-shadow: 0 8px 22px -10px var(--gold-glow);
+  --pulse: var(--gold-glow);
+  --spark: var(--gold-hi);
+  --spark-glow: var(--gold-glow);
+  --bloom: var(--gold-glow);
+  --pill: rgba(6, 5, 8, 0.72);
+  --pill-text: #e6dfd1;
+  --pill-line: rgba(242, 236, 223, 0.24);
   --kh: 240px;
   color-scheme: dark;
 }
+/* The two finishes share one layout; the switch only swaps the colours below.
+   Light (the default): a near-white page with ivory panels. Headings are near-black and running text a
+   neutral grey, because thin strokes and warm-on-warm colour are what wash out on a light ground. */
+:root[data-theme="light"] {
+  --page: #fdfbf7;
+  --board-top: #fffdfa;
+  --board-bottom: #faf7f1;
+  --lacquer-sheen: transparent;
+  --lacquer-sheen-soft: transparent;
+  --text: #14120f;
+  --text-soft: #3f3b35;
+  --muted: #5c574f;
+  --line: rgba(20, 18, 14, 0.2);
+  --accent: #6a4912;
+  --brand-hi: #a47a2c;
+  --brand-mid: #8a6421;
+  --brand-lo: #654612;
+  /* Panels: ivory, like the keys, shaded from top to bottom, with the faint grain the material has. */
+  --panel:
+    repeating-linear-gradient(90deg, rgba(120, 98, 58, 0.035) 0 1px, transparent 1px 6px),
+    linear-gradient(180deg, #f4efe3 0%, #efe9db 55%, #e7dfcd 100%);
+  --panel-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 4px 0 0 #c2b79d, 0 12px 16px -10px rgba(70, 55, 30, 0.38);
+  --take:
+    repeating-linear-gradient(90deg, rgba(120, 98, 58, 0.035) 0 1px, transparent 1px 6px),
+    linear-gradient(180deg, #f9f1db 0%, #f4e9cd 55%, #ebddb9 100%);
+  --take-line: rgba(150, 112, 44, 0.6);
+  --take-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 4px 0 0 #b79c62, 0 12px 16px -10px rgba(70, 55, 30, 0.38);
+  --fill: rgba(255, 255, 255, 0.72);
+  --fill-line: rgba(20, 18, 14, 0.16);
+  --btn-text: var(--text);
+  --gold-top: #ecd08a;
+  --gold-bottom: #b58c45;
+  --gold-edge: #a07a35;
+  --gold-shadow: 0 8px 18px -10px rgba(110, 80, 20, 0.75);
+  --spark: #9a6f24;
+  --spark-glow: rgba(255, 255, 255, 0.5);
+  --bloom: rgba(190, 140, 50, 0.28);
+  --pulse: rgba(176, 130, 45, 0.5);
+  /* Paper above, piano below, also where the page is pulled past its ends. */
+  background: linear-gradient(180deg, var(--page) 0 50%, var(--lacquer-deep) 50% 100%);
+  color-scheme: light;
+}
 
-html { box-sizing: border-box; height: 100%; background: var(--lacquer-deep); }
+html { box-sizing: border-box; height: 100%; background: var(--page); }
 *, *::before, *::after { box-sizing: inherit; }
 body {
   margin: 0;
   min-height: 100%;
   display: flex;
   flex-direction: column;
-  background: var(--lacquer-deep);
   color: var(--text);
   font-family: var(--font-body);
   font-size: 16px;
@@ -75,7 +166,9 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 [hidden] { display: none !important; }
-a:focus-visible, button:focus-visible { outline: 2px solid var(--gold-hi); outline-offset: 3px; }
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+/* One screen: the text takes the room it needs, the keyboard gets the rest (worked out in fit()). */
+.stage { flex: 1 0 auto; display: flex; flex-direction: column; }
 
 /* ---------- Fallboard (lacquer) ---------- */
 .fallboard {
@@ -83,27 +176,33 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--gold-hi); outli
   flex: 1 0 auto;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
   background:
     radial-gradient(90% 55% at 16% 0%, var(--lacquer-sheen), transparent 70%),
     radial-gradient(55% 40% at 88% 10%, var(--lacquer-sheen-soft), transparent 70%),
-    linear-gradient(180deg, var(--lacquer) 0%, var(--lacquer-deep) 100%);
+    linear-gradient(180deg, var(--board-top) 0%, var(--board-bottom) 100%);
 }
 .copy {
   position: relative;
   z-index: 2;
-  flex: 1;
+  flex: 0 0 auto;
   width: 100%;
   max-width: 1180px;
-  margin: 0 auto;
+  margin: auto;
   display: grid;
   gap: 18px;
-  align-content: center;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: clamp(18px, 4.5vh, 72px) 4px;
+  padding-block: clamp(18px, 4.5vh, 72px) 16px;
 }
 .plate { display: grid; justify-items: center; gap: 8px; text-align: center; }
+.sheet { display: grid; gap: 13px; min-width: 0; }
+/* Each section sits on its own panel, cut like a key: square at the top, rounded at the front, with a lip. */
+:is(h1, .lede, .cta) {
+  padding: 12px 14px;
+  border-radius: 3px 3px 7px 7px;
+  background: var(--panel);
+  box-shadow: var(--panel-shadow);
+}
 .brand {
   margin: 0;
   display: flex;
@@ -116,10 +215,19 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--gold-hi); outli
   font-variation-settings: "opsz" 16;
   line-height: 1.1;
   letter-spacing: 0.02em;
-  color: var(--gold);
+  color: var(--brand-mid);
+}
+.face {
+  width: clamp(46px, 1.35em, 60px);
+  height: auto;
+  aspect-ratio: 1;
+  flex: none;
+  border-radius: 50%;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px var(--brand-lo);
 }
 .brand span {
-  background: linear-gradient(180deg, var(--gold-hi) 10%, var(--gold) 55%, var(--gold-lo) 100%);
+  background: linear-gradient(180deg, var(--brand-hi) 10%, var(--brand-mid) 55%, var(--brand-lo) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -129,34 +237,57 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--gold-hi); outli
   content: "";
   width: clamp(28px, 6vw, 64px);
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--gold));
+  background: linear-gradient(90deg, transparent, var(--brand-mid));
 }
-.brand::after { background: linear-gradient(90deg, var(--gold), transparent); }
+.brand::after { background: linear-gradient(90deg, var(--brand-mid), transparent); }
 .eyebrow {
   margin: 0;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.24em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--muted);
 }
+/* Light/dark switch: a small half-filled circle in the top corner. It takes no room of its own. */
+.plate { position: relative; }
+.theme {
+  position: absolute;
+  top: 9px;
+  right: -6px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--muted);
+  opacity: 0.75;
+  cursor: pointer;
+  transition: transform 0.35s ease, opacity 0.2s;
+}
+.theme:hover { opacity: 1; }
+.theme svg { width: 15px; height: 15px; display: block; }
+.theme::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; } /* a finger-sized target */
+:root[data-theme="light"] .theme { transform: rotate(180deg); }
 h1 {
   margin: 0;
   min-width: 0;
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 550;
   font-size: clamp(28px, 3.8vw + 14px, 66px);
-  font-variation-settings: "opsz" 24;
+  font-variation-settings: "opsz" 18;
   line-height: 1.05;
   letter-spacing: -0.005em;
   text-wrap: balance;
 }
 .nb { white-space: nowrap; }
-h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gold-hi); }
-.pitch { display: grid; gap: 16px; min-width: 0; }
+h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--accent); }
+.pitch { display: grid; gap: 13px; min-width: 0; }
+.say { position: relative; display: grid; gap: 13px; }
 .lede {
   margin: 0;
-  max-width: 46ch;
   font-size: clamp(16px, 0.25vw + 15px, 18px);
   line-height: 1.55;
   color: var(--text-soft);
@@ -166,11 +297,12 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   margin: 0;
   font-family: var(--font-display);
   font-style: italic;
-  font-weight: 600;
+  font-weight: 650;
   font-size: 25px;
-  font-variation-settings: "opsz" 14;
+  font-variation-settings: "opsz" 12;
   line-height: 1.2;
-  color: var(--gold-hi);
+  color: var(--text);
+  padding-inline: 14px; /* lines up with the text inside the panels */
 }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .btn {
@@ -181,26 +313,30 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   min-height: 48px;
   padding: 0 18px;
   border-radius: 6px;
-  border: 1px solid var(--line);
-  color: var(--text);
+  border: 1px solid var(--fill-line);
+  background: var(--fill);
+  color: var(--btn-text);
   text-decoration: none;
   font: 600 15px/1 var(--font-body);
   letter-spacing: 0.01em;
   transition: border-color 0.2s, transform 0.15s, filter 0.2s;
 }
-.btn:hover { border-color: var(--gold); }
+.btn:hover { border-color: var(--brand-mid); color: var(--text); }
 .btn:active { transform: translateY(1px); }
 .btn svg { width: 19px; height: 19px; flex: none; }
 .btn-gold {
-  border-color: transparent;
+  border-color: var(--gold-edge);
   color: var(--on-gold);
-  background: linear-gradient(180deg, var(--gold-hi), var(--gold) 60%, var(--gold-lo));
-  box-shadow: 0 8px 22px -10px var(--gold-glow);
+  background: linear-gradient(180deg, var(--gold-top), var(--gold) 60%, var(--gold-bottom));
+  box-shadow: var(--gold-shadow);
 }
-.btn-gold:hover { filter: brightness(1.06); }
+.btn-gold:hover { filter: brightness(1.06); color: var(--on-gold); }
+/* While the melody card is up, its button is the one to press; WhatsApp joins the other ways to reach me. */
+.pitch.has-take .btn-gold { background: var(--fill); border-color: var(--fill-line); color: var(--btn-text); box-shadow: none; }
 @media (max-width: 520px) {
   .actions { gap: 8px; }
   .actions .btn { flex: 1 1 auto; padding: 0 12px; }
+  .actions .btn-gold { flex-grow: 3; }
   .wide { display: none; }
 }
 .contact {
@@ -223,63 +359,102 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   padding: 4px 2px;
   border: 0;
   background: none;
-  color: var(--gold);
+  color: var(--brand-mid);
   font: 600 13px var(--font-body);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
 }
 .mail { color: var(--text-soft); text-decoration: none; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
-.mail:hover { border-color: var(--gold); }
+.mail:hover { border-color: var(--brand-mid); }
 
 @media (min-width: 900px) {
-  .copy { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: clamp(40px, 5vw, 92px); row-gap: 30px; align-items: end; }
-  .plate { grid-column: 1 / -1; }
+  .copy { row-gap: 30px; }
+  .sheet { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); column-gap: 16px; align-items: stretch; }
+  .pitch, .say { grid-template-rows: 1fr auto; }
+  :is(h1, .lede, .cta) { padding: 24px 28px; }
+  :root:is([data-fit="1"], [data-fit="2"], [data-fit="3"]) .sheet :is(h1, .lede, .cta) { padding-block: 18px; }
+  .cta-lead { padding-inline: 28px; }
+  h1 { display: flex; flex-direction: column; justify-content: flex-end; }
 }
 
-/* ---------- Music desk: hint and "your melody" card ---------- */
-.desk {
-  position: relative;
-  z-index: 3;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-  min-height: 64px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px));
-  padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 10px 12px;
-}
+/* ---------- Hint (rests on the keys) and "your melody" card (lies over the greeting) ----------
+   Neither takes room of its own, so the keyboard never moves once it is on screen, and the card
+   leaves every way of getting in touch (buttons, number, e-mail) in view underneath it. */
 .hint {
+  position: absolute;
+  z-index: 4;
+  left: 50%;
+  top: 21px;
+  transform: translateX(-50%);
   margin: 0;
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  max-width: calc(100% - 24px);
   padding: 9px 16px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--veil);
+  border: 1px solid var(--pill-line);
+  background: var(--pill);
   -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
-  color: var(--text-soft);
+  color: var(--pill-text);
   font-size: 14px;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.45s ease-out;
 }
+.hint.gone { opacity: 0; }
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold-hi); flex: none; }
 .take {
-  width: min(100%, 560px);
+  position: absolute;
+  z-index: 5;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  min-height: calc(100% + 2px);
+  color: var(--text);
   display: grid;
-  gap: 8px;
-  padding: 14px 16px;
-  border-radius: 10px;
-  border: 1px solid var(--line);
-  background: var(--veil);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
+  align-content: center;
+  gap: 5px;
+  padding: 8px 10px;
+  border-radius: 3px 3px 7px 7px;
+  border: 1px solid var(--take-line);
+  background: var(--take);
+  box-shadow: var(--take-shadow);
   text-align: center;
 }
 .take p { margin: 0; }
-.take-notes { font-family: var(--font-display); font-style: italic; font-weight: 600; font-variation-settings: "opsz" 12; font-size: 19px; color: var(--gold-hi); overflow-wrap: anywhere; }
-.take-text { font-size: 14px; line-height: 1.45; color: var(--text-soft); }
+.take-notes {
+  padding-inline: 26px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-weight: 600;
+  font-variation-settings: "opsz" 12;
+  font-size: 19px;
+  line-height: 1.25;
+  color: var(--accent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.take-text { font-size: 13px; line-height: 1.35; color: var(--text-soft); text-wrap: balance; }
 .take-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 2px; }
+.take-close {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.take-close svg { width: 14px; height: 14px; }
+.take-close:hover { color: var(--text); }
 .chip {
   display: inline-flex;
   align-items: center;
@@ -287,16 +462,49 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   min-height: 40px;
   padding: 0 14px;
   border-radius: 6px;
-  border: 1px solid var(--line);
-  background: transparent;
+  border: 1px solid var(--fill-line);
+  background: var(--fill);
   color: var(--text);
   font: 600 14px var(--font-body);
   text-decoration: none;
   cursor: pointer;
 }
 .chip svg { width: 16px; height: 16px; }
-.chip:hover { border-color: var(--gold); }
-.chip-gold { border-color: transparent; color: var(--on-gold); background: linear-gradient(180deg, var(--gold-hi), var(--gold)); }
+.chip:hover { border-color: var(--brand-mid); }
+.chip-gold { border-color: var(--gold-edge); color: var(--on-gold); background: linear-gradient(180deg, var(--gold-top), var(--gold) 60%, var(--gold-bottom)); }
+
+/* ---------- Tighter settings for short screens (fit() picks the first one that leaves room for the keys) ----------
+   1 closes the gaps, 2 also sets the type a little smaller, 3 also puts the name and its line side by side. */
+:root[data-fit="1"] .copy { row-gap: 12px; padding-top: clamp(12px, 2.6vh, 40px); padding-bottom: 14px; }
+:root[data-fit="1"] .plate { gap: 4px; }
+:root[data-fit="1"] .brand { font-size: clamp(28px, 2vw + 20px, 40px); }
+:root[data-fit="1"] h1 { font-size: clamp(27px, 3.3vw + 13px, 58px); }
+:root[data-fit="1"] .sheet { row-gap: 11px; }
+:root[data-fit="1"] :is(.pitch, .say) { gap: 11px; }
+:root[data-fit="1"] .cta { gap: 8px; }
+:root[data-fit="1"] :is(h1, .lede, .cta) { padding-block: 10px; }
+:root:is([data-fit="2"], [data-fit="3"]) .copy { row-gap: 10px; padding-top: clamp(10px, 1.8vh, 24px); padding-bottom: 14px; }
+:root:is([data-fit="2"], [data-fit="3"]) .plate { gap: 3px; }
+:root:is([data-fit="2"], [data-fit="3"]) .brand { font-size: clamp(26px, 1.6vw + 20px, 36px); }
+:root:is([data-fit="2"], [data-fit="3"]) .face { width: 40px; }
+:root:is([data-fit="2"], [data-fit="3"]) .theme { top: 6px; }
+:root:is([data-fit="2"], [data-fit="3"]) h1 { font-size: clamp(25px, 2.9vw + 12px, 50px); }
+:root:is([data-fit="2"], [data-fit="3"]) .lede { font-size: 15px; line-height: 1.5; }
+:root:is([data-fit="2"], [data-fit="3"]) .sheet { row-gap: 11px; }
+:root:is([data-fit="2"], [data-fit="3"]) :is(.pitch, .say) { gap: 11px; }
+:root:is([data-fit="2"], [data-fit="3"]) .cta { gap: 8px; }
+:root:is([data-fit="2"], [data-fit="3"]) :is(h1, .lede, .cta) { padding-block: 10px; }
+:root:is([data-fit="2"], [data-fit="3"]) .cta-lead { font-size: 22px; }
+:root:is([data-fit="2"], [data-fit="3"]) .btn { min-height: 44px; }
+:root[data-fit="3"] .plate { display: flex; justify-content: center; align-items: center; gap: 12px; padding-right: 24px; }
+:root[data-fit="3"] .brand::before, :root[data-fit="3"] .brand::after { display: none; }
+:root[data-fit="3"] .copy { padding-top: 8px; }
+:root[data-fit="3"] .face { width: 34px; }
+:root[data-fit="3"] .theme { top: 50%; margin-top: -14px; }
+:root[data-fit="3"] .eyebrow { letter-spacing: 0.12em; white-space: nowrap; }
+:root[data-fit="3"] .sheet { row-gap: 10px; }
+:root[data-fit="3"] :is(.pitch, .say) { gap: 10px; }
+:root[data-fit="3"] :is(h1, .lede, .cta) { padding-block: 8px; }
 
 /* ---------- Reflection of the keys in the lacquer ---------- */
 .reflection {
@@ -310,11 +518,14 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   padding-right: max(16px, env(safe-area-inset-right, 0px));
   transform: scaleY(-1);
   opacity: 0.13;
+  overflow: hidden;
   pointer-events: none;
-  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 28%);
-  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 28%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 22%);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 0) 22%);
 }
 .reflection-keys { position: relative; height: 100%; }
+/* No mirror image on the light page: a pale surface shows only grey bars, which reads as a smudge. */
+:root[data-theme="light"] .reflection { display: none; }
 .sparks { position: absolute; inset: 0; z-index: 4; overflow: hidden; pointer-events: none; }
 
 /* ---------- Keybed ---------- */
@@ -323,14 +534,17 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   z-index: 2;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  padding-block: 0 14px;
+  padding-block: 0 12px;
+  flex: none;
   background: linear-gradient(180deg, var(--lacquer-deep), var(--lacquer));
 }
+
 .felt {
   position: relative;
   z-index: 3;
   height: 9px;
-  border-radius: 2px 2px 0 0;
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-right: calc(-1 * max(16px, env(safe-area-inset-right, 0px)));
   background: linear-gradient(180deg, var(--felt-lo), var(--felt-hi) 40%, var(--felt) 70%, var(--felt-lo));
   box-shadow: 0 2px 4px var(--shadow);
 }
@@ -441,8 +655,8 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   bottom: 4px;
   font-family: var(--font-glyph);
   line-height: 1;
-  color: var(--gold-hi);
-  text-shadow: 0 0 18px var(--gold-glow);
+  color: var(--spark);
+  text-shadow: 0 0 18px var(--spark-glow);
   animation: rise-note 2.8s cubic-bezier(0.15, 0.7, 0.3, 1) forwards;
 }
 .bloom {
@@ -451,7 +665,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   width: 190px;
   height: 140px;
   border-radius: 50%;
-  background: radial-gradient(closest-side, var(--gold-glow), transparent);
+  background: radial-gradient(closest-side, var(--bloom), transparent);
   animation: bloom 1.1s ease-out forwards;
 }
 @keyframes rise-note {
@@ -468,7 +682,10 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   .intro .key { animation: keys-in 820ms cubic-bezier(0.2, 0.75, 0.2, 1) backwards; animation-delay: calc(var(--i, 0) * 26ms); }
   .dot { animation: pulse 1.8s ease-out infinite; }
   .take:not([hidden]) { animation: take-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+  /* Keeps inviting until the card is closed. */
+  .take:not([hidden]) .chip-gold { animation: invite 1.6s ease-out 500ms infinite; }
 }
+@keyframes invite { from { box-shadow: 0 0 0 0 var(--pulse); } to { box-shadow: 0 0 0 16px transparent; } }
 @keyframes keys-in { from { transform: translateY(-20px); } }
 @keyframes pulse { from { box-shadow: 0 0 0 0 var(--gold-glow); } to { box-shadow: 0 0 0 12px transparent; } }
 @keyframes take-in { from { transform: translateY(10px); opacity: 0; } }
@@ -479,41 +696,43 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   <section class="fallboard" id="fallboard">
     <div class="copy">
       <header class="plate">
-        <p class="brand"><span>Vlad</span></p>
+        <p class="brand"><img class="face" src="vlad.jpg" alt="" width="48" height="48"><span>Vlad</span></p>
         <p class="eyebrow">Lecții de pian · București</p>
+        <button class="theme" id="theme" type="button" aria-label="Schimbă tema: deschisă sau închisă"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5Z" fill="currentColor"/></svg></button>
       </header>
 
-      <h1>Pe Bach <span class="nb">îl poate cânta</span> oricine. <em><span class="nb">Pe tine,</span> <span class="nb">doar tu.</span></em></h1>
+      <div class="sheet">
+        <h1>Pe Bach <span class="nb">îl poate cânta</span> oricine. <em><span class="nb">Pe tine,</span> <span class="nb">doar tu.</span></em></h1>
 
-      <div class="pitch">
-        <p class="lede">Salut, sunt Vlad și dau lecții de pian. Te învăț partituri, te învăț și niște Bach. Dar mai presus de toate, te învăț să cânți ce simți, ce gândești și cine ești. Un univers numai al tău.</p>
-        <div class="cta">
-          <p class="cta-lead">Hai să-l construim împreună.</p>
-          <div class="actions">
-            <a class="btn btn-gold" id="wa" href="https://wa.me/40750199672" target="_blank" rel="noopener">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
-              <span><span class="wide">Scrie-mi pe </span>WhatsApp</span>
-            </a>
-            <a class="btn" id="sms" href="sms:+40750199672">SMS</a>
-            <a class="btn" href="tel:+40750199672">Sună-mă</a>
+        <div class="pitch" id="pitch">
+          <div class="say">
+            <p class="lede">Salut, sunt Vlad și dau lecții de pian. Te învăț partituri, te învăț și niște Bach. Dar mai presus de toate, te învăț să cânți ce simți, ce gândești și cine ești. Un univers numai al tău.</p>
+            <p class="cta-lead">Hai să-l construim împreună.</p>
+            <div class="take" id="take" role="status" hidden>
+              <button class="take-close" id="takeClose" type="button" aria-label="Închide"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+              <p class="take-notes" id="takeNotes"></p>
+              <p class="take-text">Melodia asta <span class="nb">n-a</span> mai <span class="nb">cântat-o</span> nimeni până acum. <span class="nb">E a ta.</span></p>
+              <div class="take-actions">
+                <button class="chip" id="replay" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13l10.5-6.5L8 5.5Z"/></svg>Ascult-o din nou</button>
+                <a class="chip chip-gold" id="waTake" href="https://wa.me/40750199672" target="_blank" rel="noopener">Vreau lecții</a>
+              </div>
+            </div>
           </div>
-          <p class="contact">
-            <span class="num" id="num">0750 199 672</span>
-            <button class="copy-btn" id="copy" type="button">Copiază</button>
-            <a class="mail" href="mailto:vlad@pianul.ro">vlad@pianul.ro</a>
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <div class="desk">
-      <p class="hint" id="hint"><span class="dot" aria-hidden="true"></span>Atinge clapele și cântă ce simți.</p>
-      <div class="take" id="take" role="status" hidden>
-        <p class="take-notes" id="takeNotes"></p>
-        <p class="take-text">Melodia asta n-a mai cântat-o nimeni până acum. E a ta.</p>
-        <div class="take-actions">
-          <button class="chip" id="replay" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13l10.5-6.5L8 5.5Z"/></svg>Ascult-o din nou</button>
-          <a class="chip chip-gold" id="waTake" href="https://wa.me/40750199672" target="_blank" rel="noopener">Vreau lecții</a>
+          <div class="cta">
+            <div class="actions">
+              <a class="btn btn-gold" id="wa" href="https://wa.me/40750199672" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
+                <span><span class="wide">Scrie-mi pe </span>WhatsApp</span>
+              </a>
+              <a class="btn" id="sms" href="sms:+40750199672">SMS</a>
+              <a class="btn" href="tel:+40750199672">Sună-mă</a>
+            </div>
+            <p class="contact">
+              <span class="num" id="num">0750 199 672</span>
+              <button class="copy-btn" id="copy" type="button">Copiază</button>
+              <a class="mail" href="mailto:vlad@pianul.ro">vlad@pianul.ro</a>
+            </p>
+          </div>
         </div>
       </div>
     </div>
@@ -525,6 +744,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   <section class="keybed" aria-label="Pian interactiv. Atinge clapele ca să cânți. Pe calculator poți cânta și cu tastele de la A la punct și virgulă.">
     <div class="felt"></div>
     <div class="keys" id="keys"></div>
+    <p class="hint" id="hint"><span class="dot" aria-hidden="true"></span>Atinge clapele și cântă ce simți.</p>
   </section>
 </main>
 
@@ -534,7 +754,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
 
   const PHONE = "40750199672";
   const MSG_MAIN = "Salut, Vlad! Am văzut site-ul tău și aș vrea lecții de pian.";
-  const MSG_TAKE = "Salut, Vlad! Tocmai am cântat ceva pe pianul de pe site-ul tău. Aș vrea lecții.";
+  const msgTake = (notes) => `Salut, Vlad! Tocmai am cântat ceva pe pianul de pe site-ul tău${notes ? `: ${notes}` : ""}. Aș vrea lecții.`;
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
@@ -546,11 +766,19 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   const hintEl = $("hint");
   const takeEl = $("take");
   const takeNotesEl = $("takeNotes");
+  const root = document.documentElement;
+  const copyEl = document.querySelector(".copy");
+  const bedEl = document.querySelector(".keybed");
+  const pitchEl = $("pitch");
 
   /* ---------- Contact ---------- */
-  $("wa").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(MSG_MAIN)}`;
-  $("waTake").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(MSG_TAKE)}`;
-  $("sms").href = `sms:+${PHONE}?&body=${encodeURIComponent(MSG_MAIN)}`;
+  // WhatsApp and SMS open with a message already written; once someone has played, it mentions their melody.
+  const setMessage = (msg) => {
+    $("wa").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(msg)}`;
+    $("sms").href = `sms:+${PHONE}?&body=${encodeURIComponent(msg)}`;
+  };
+  setMessage(MSG_MAIN);
+  $("waTake").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(msgTake(""))}`;
 
   const copyBtn = $("copy");
   copyBtn.addEventListener("click", () => {
@@ -1070,9 +1298,9 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     const target = Math.min(84, Math.max(44, 34 + window.innerWidth * 0.032));
     const count = Math.max(7, Math.min(24, Math.round(width / target)));
     const w = width / count;
-    const ratio = window.innerWidth < 600 ? 4.8 : 5.4;
-    const kh = Math.round(Math.max(170, Math.min(w * ratio, window.innerHeight * 0.44, 470)));
-    document.documentElement.style.setProperty("--kh", `${kh}px`);
+    keyWidth = w;
+    keyRatio = window.innerWidth < 600 ? 4.8 : 5.4;
+    fit();
 
     const start = 28 - Math.floor((count - 8) / 2); // white key 28 is middle C (Do central)
     keysEl.textContent = "";
@@ -1122,9 +1350,31 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     prepare([...keys.keys()].sort((a, b) => Math.abs(a - middle) - Math.abs(b - middle)));
   }
 
+  // The whole keyboard belongs on the first screen. The text keeps the height it needs and the keys
+  // take what is left; on a short screen the text closes up a little first so the keys stay worth playing.
+  // Measured against the screen with the browser's bars showing, so it holds from the first moment.
+  let keyWidth = 60;
+  let keyRatio = 5;
+  function fit() {
+    const pad = getComputedStyle(root);
+    const room = root.clientHeight - parseFloat(pad.paddingTop) - parseFloat(pad.paddingBottom);
+    const tallest = Math.min(keyWidth * keyRatio, 470);
+    const comfortable = Math.min(tallest, Math.max(200, keyWidth * 3.6));
+    const frame = bedEl.offsetHeight - keysEl.offsetHeight; // felt and the wood under the keys
+    let left = 0;
+    for (let tier = 0; tier <= 3; tier++) {
+      root.dataset.fit = String(tier);
+      left = Math.floor(room - copyEl.getBoundingClientRect().height - frame);
+      if (left >= comfortable) break;
+    }
+    // Too short even so (a phone on its side): keep the keys a good size and let the page scroll.
+    const kh = left >= 140 ? Math.min(left, tallest) : Math.max(170, Math.min(tallest, room * 0.44));
+    root.style.setProperty("--kh", `${Math.round(kh)}px`);
+  }
+
   function layout() {
     const width = keysEl.clientWidth;
-    if (width === lastWidth) return;
+    if (width === lastWidth) { if (!active.size) fit(); return; }
     lastWidth = width;
     build();
   }
@@ -1228,12 +1478,22 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
   function showTake(notes) {
     lastTake = notes;
     const names = notes.slice(0, 14).map((n) => NAMES[n.midi % 12]);
-    takeNotesEl.textContent = names.join(" · ") + (notes.length > 14 ? " …" : "");
+    const line = names.join(" · ") + (notes.length > 14 ? " …" : "");
+    takeNotesEl.textContent = line;
+    $("waTake").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(msgTake(line))}`;
+    setMessage(msgTake(line));
+    pitchEl.classList.add("has-take");
     hintEl.hidden = true;
     takeEl.hidden = true;
     void takeEl.offsetWidth; // restart the entrance animation
     takeEl.hidden = false;
   }
+
+  $("takeClose").addEventListener("click", () => {
+    takeEl.hidden = true;
+    pitchEl.classList.remove("has-take");
+    setMessage(MSG_MAIN);
+  });
 
   $("replay").addEventListener("click", () => {
     if (!lastTake.length || replaying) return;
@@ -1279,6 +1539,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     ensureAudio();
     if (awake) return;
     awake = true;
+    hintEl.classList.add("gone"); // it rests on the keys, so it steps aside at the first touch
     clearInterval(ghostLoop);
     ghostTimers.forEach(clearTimeout);
     ghostTimers = [];
@@ -1369,8 +1630,17 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--gol
     resizeTimer = setTimeout(layout, 120);
   });
 
+  $("theme").addEventListener("click", () => {
+    const next = root.dataset.theme === "light" ? "dark" : "light";
+    window.setTheme(next);
+    try { localStorage.setItem("theme", next); } catch (err) { /* storage is off: the choice lasts for this visit */ }
+    if (!active.size) fit(); // the two finishes space the text differently
+  });
+
   layout();
   intro();
+  // The display type arrives a moment later and changes how tall the text is.
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (!active.size) fit(); });
 })();
 </script>
 </body>
