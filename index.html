@@ -271,13 +271,30 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 }
 .theme:hover { opacity: 1; }
 .theme svg { width: 15px; height: 15px; display: block; }
-.theme::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; } /* a finger-sized target */
+.theme::after { content: ""; position: absolute; inset: -8px -8px -8px -2px; border-radius: 50%; } /* a finger-sized target */
+/* Language switch: two letters naming the other language, between the video link and the light/dark switch. */
+.lang {
+  position: absolute;
+  top: 9px;
+  right: 20px;
+  height: 28px;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: 700 10px/1 var(--font-body);
+  letter-spacing: 0.06em;
+  opacity: 0.85;
+  cursor: pointer;
+}
+.lang:hover { opacity: 1; color: var(--text); }
+.lang::after { content: ""; position: absolute; inset: -8px -3px; }
 :root[data-theme="light"] .theme { transform: rotate(180deg); }
 /* YouTube link: the standard icon at its standard size, beside the switch. It takes no room of its own. */
 .yt {
   position: absolute;
   top: 13px;
-  right: 32px;
+  right: 46px;
   width: 28px;
   height: 20px;
   display: block;
@@ -298,6 +315,7 @@ h1 {
   text-wrap: balance;
 }
 .nb { white-space: nowrap; }
+@media (min-width: 600px) and (max-width: 899px) { .ph { display: none; } } /* a line break not wanted on tablets, where the headline is wide */
 h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--accent); }
 .pitch { display: grid; gap: 13px; min-width: 0; }
 .say { position: relative; display: grid; gap: 13px; }
@@ -504,6 +522,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
 :root:is([data-fit="2"], [data-fit="3"]) .face { width: 40px; }
 :root:is([data-fit="2"], [data-fit="3"]) .theme { top: 6px; }
 :root:is([data-fit="2"], [data-fit="3"]) .yt { top: 10px; }
+:root:is([data-fit="2"], [data-fit="3"]) .lang { top: 6px; }
 :root:is([data-fit="2"], [data-fit="3"]) h1 { font-size: clamp(25px, 2.9vw + 12px, 50px); }
 :root:is([data-fit="2"], [data-fit="3"]) .lede { font-size: 15px; line-height: 1.5; }
 :root:is([data-fit="2"], [data-fit="3"]) .sheet { row-gap: 11px; }
@@ -512,13 +531,14 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
 :root:is([data-fit="2"], [data-fit="3"]) :is(h1, .lede, .cta) { padding-block: 10px; }
 :root:is([data-fit="2"], [data-fit="3"]) .cta-lead { font-size: 22px; }
 :root:is([data-fit="2"], [data-fit="3"]) .btn { min-height: 44px; }
-:root[data-fit="3"] .plate { display: flex; justify-content: center; align-items: center; gap: 10px; padding-right: 62px; }
+:root[data-fit="3"] .plate { display: flex; justify-content: center; align-items: center; gap: 7px; padding-right: 77px; }
 :root[data-fit="3"] .brand::before, :root[data-fit="3"] .brand::after { display: none; }
 :root[data-fit="3"] .copy { padding-top: 8px; }
-:root[data-fit="3"] .face { width: 34px; }
+:root[data-fit="3"] .face { width: 31px; }
 :root[data-fit="3"] .theme { top: 50%; margin-top: -14px; }
 :root[data-fit="3"] .yt { top: 50%; margin-top: -10px; }
-:root[data-fit="3"] .eyebrow { min-width: 0; font-size: clamp(9px, 2.5vw, 11px); letter-spacing: 0.07em; white-space: nowrap; }
+:root[data-fit="3"] .lang { top: 50%; margin-top: -14px; }
+:root[data-fit="3"] .eyebrow { min-width: 0; font-size: clamp(8.6px, 2.4vw, 11px); letter-spacing: 0.04em; white-space: nowrap; }
 /* On a phone the line is small, so what is on offer is set a size up and the city a size down. */
 @media (max-width: 440px) {
   :root[data-fit="3"] .what { font-size: 1.13em; }
@@ -723,24 +743,25 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
     <div class="copy">
       <header class="plate">
         <p class="brand"><img class="face" src="vlad.jpg" alt="" width="48" height="48"><span>Vlad</span></p>
-        <p class="eyebrow"><span class="what">Lecții de pian</span> · <span class="where">București</span></p>
-        <a class="yt" href="https://www.youtube.com/watch?v=Ke5uTkKrvMk" target="_blank" rel="noopener" aria-label="Vezi-mă cântând pe YouTube"><svg viewBox="0 0 28.57 20" aria-hidden="true"><path fill="#f00" d="M27.973 3.123A3.578 3.578 0 0 0 25.447.597C23.22 0 14.285 0 14.285 0S5.35 0 3.123.597A3.578 3.578 0 0 0 .597 3.123C0 5.35 0 10 0 10s0 4.65.597 6.877a3.578 3.578 0 0 0 2.526 2.526C5.35 20 14.285 20 14.285 20s8.935 0 11.162-.597a3.578 3.578 0 0 0 2.526-2.526C28.57 14.65 28.57 10 28.57 10s-.002-4.65-.597-6.877Z"/><path fill="#fff" d="M11.425 14.285 18.848 10l-7.423-4.285v8.57Z"/></svg></a>
+        <p class="eyebrow"><span class="what" id="what">Lecții de pian</span> · <span class="where" id="where">București</span></p>
+        <a class="yt" id="yt" href="https://www.youtube.com/watch?v=Ke5uTkKrvMk" target="_blank" rel="noopener" aria-label="Vezi-mă cântând pe YouTube"><svg viewBox="0 0 28.57 20" aria-hidden="true"><path fill="#f00" d="M27.973 3.123A3.578 3.578 0 0 0 25.447.597C23.22 0 14.285 0 14.285 0S5.35 0 3.123.597A3.578 3.578 0 0 0 .597 3.123C0 5.35 0 10 0 10s0 4.65.597 6.877a3.578 3.578 0 0 0 2.526 2.526C5.35 20 14.285 20 14.285 20s8.935 0 11.162-.597a3.578 3.578 0 0 0 2.526-2.526C28.57 14.65 28.57 10 28.57 10s-.002-4.65-.597-6.877Z"/><path fill="#fff" d="M11.425 14.285 18.848 10l-7.423-4.285v8.57Z"/></svg></a>
+        <button class="lang" id="lang" type="button" aria-label="English" lang="en">EN</button>
         <button class="theme" id="theme" type="button" aria-label="Schimbă tema: deschisă sau închisă"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5Z" fill="currentColor"/></svg></button>
       </header>
 
       <div class="sheet">
-        <h1>Pe Bach <span class="nb">îl poate cânta</span> oricine. <em><span class="nb">Pe tine,</span> <span class="nb">doar tu.</span></em></h1>
+        <h1 id="headline">Pe Bach <span class="nb">îl poate cânta</span> oricine. <em><span class="nb">Pe tine,</span> <span class="nb">doar tu.</span></em></h1>
 
         <div class="pitch" id="pitch">
           <div class="say">
-            <p class="lede">Salut, sunt Vlad și dau lecții de pian. Te învăț partituri, te învăț și niște Bach. Dar mai presus de toate, te învăț să cânți ce simți, ce gândești și cine ești. Un univers numai al tău.</p>
-            <p class="cta-lead">Hai să-l construim împreună.</p>
+            <p class="lede" id="lede">Salut, sunt Vlad și dau lecții de pian. Te învăț partituri, te învăț și niște Bach. Dar mai presus de toate, te învăț să cânți ce simți, ce gândești și cine ești. Un univers numai al tău.</p>
+            <p class="cta-lead" id="lead">Hai să-l construim împreună.</p>
             <div class="take" id="take" role="status" hidden>
               <button class="take-close" id="takeClose" type="button" aria-label="Închide"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
               <p class="take-notes" id="takeNotes"></p>
-              <p class="take-text">Melodia asta <span class="nb">n-a</span> mai <span class="nb">cântat-o</span> nimeni până acum. <span class="nb">E a ta.</span></p>
+              <p class="take-text" id="takeText">Melodia asta <span class="nb">n-a</span> mai <span class="nb">cântat-o</span> nimeni până acum. <span class="nb">E a ta.</span></p>
               <div class="take-actions">
-                <button class="chip" id="replay" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13l10.5-6.5L8 5.5Z"/></svg>Ascult-o din nou</button>
+                <button class="chip" id="replay" type="button"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5.5v13l10.5-6.5L8 5.5Z"/></svg><span id="replayText">Ascult-o din nou</span></button>
                 <a class="chip chip-gold" id="waTake" href="https://wa.me/40750199672" target="_blank" rel="noopener">Vreau lecții</a>
               </div>
             </div>
@@ -749,10 +770,10 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
             <div class="actions">
               <a class="btn btn-gold" id="wa" href="https://wa.me/40750199672" target="_blank" rel="noopener">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.5l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>
-                <span><span class="wide">Scrie-mi pe </span>WhatsApp</span>
+                <span id="waText"><span class="wide">Scrie-mi pe </span>WhatsApp</span>
               </a>
               <a class="btn" id="sms" href="sms:+40750199672">SMS</a>
-              <a class="btn" href="tel:+40750199672">Sună-mă</a>
+              <a class="btn" id="call" href="tel:+40750199672">Sună-mă</a>
             </div>
             <p class="contact">
               <span class="num" id="num">0750 199 672</span>
@@ -768,10 +789,10 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
     <div class="sparks" id="sparks" aria-hidden="true"></div>
   </section>
 
-  <section class="keybed" aria-label="Pian interactiv. Atinge clapele ca să cânți. Pe calculator poți cânta și cu tastele de la A la punct și virgulă.">
+  <section class="keybed" id="bed" aria-label="Pian interactiv. Atinge clapele ca să cânți. Pe calculator poți cânta și cu tastele de la A la punct și virgulă.">
     <div class="felt"></div>
     <div class="keys" id="keys"></div>
-    <p class="hint" id="hint"><span class="dot" aria-hidden="true"></span>Atinge clapele și cântă ce simți.</p>
+    <p class="hint" id="hint"><span class="dot" aria-hidden="true"></span><span id="hintText">Atinge clapele și cântă ce simți.</span></p>
   </section>
 </main>
 
@@ -780,8 +801,65 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
   "use strict";
 
   const PHONE = "40750199672";
-  const MSG_MAIN = "Salut, Vlad! Am văzut site-ul tău și aș vrea lecții de pian.";
-  const msgTake = (notes) => `Salut, Vlad! Tocmai am cântat ceva pe pianul de pe site-ul tău${notes ? `: ${notes}` : ""}. Aș vrea lecții.`;
+  /* ---------- The words, in Romanian (as written in the page) and in English ---------- */
+  const TEXT = {
+    ro: {
+      title: "Lecții de pian cu Vlad",
+      headline: 'Pe Bach <span class="nb">îl poate cânta</span> oricine. <em><span class="nb">Pe tine,</span> <span class="nb">doar tu.</span></em>',
+      what: "Lecții de pian",
+      where: "București",
+      lede: "Salut, sunt Vlad și dau lecții de pian. Te învăț partituri, te învăț și niște Bach. Dar mai presus de toate, te învăț să cânți ce simți, ce gândești și cine ești. Un univers numai al tău.",
+      lead: "Hai să-l construim împreună.",
+      wa: '<span class="wide">Scrie-mi pe </span>WhatsApp',
+      call: "Sună-mă",
+      copy: "Copiază",
+      copied: "Copiat",
+      selected: "Selectat",
+      hint: "Atinge clapele și cântă ce simți.",
+      takeText: 'Melodia asta <span class="nb">n-a</span> mai <span class="nb">cântat-o</span> nimeni până acum. <span class="nb">E a ta.</span>',
+      replay: "Ascult-o din nou",
+      want: "Vreau lecții",
+      names: ["Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"],
+      msgMain: "Salut, Vlad! Am văzut site-ul tău și aș vrea lecții de pian.",
+      msgTake: (notes) => `Salut, Vlad! Tocmai am cântat ceva pe pianul de pe site-ul tău${notes ? `: ${notes}` : ""}. Aș vrea lecții.`,
+      yt: "Vezi-mă cântând pe YouTube",
+      theme: "Schimbă tema: deschisă sau închisă",
+      close: "Închide",
+      bed: "Pian interactiv. Atinge clapele ca să cânți. Pe calculator poți cânta și cu tastele de la A la punct și virgulă.",
+      other: ["EN", "English", "en"],
+    },
+    en: {
+      title: "Piano lessons with Vlad",
+      headline: 'Anyone<br class="ph"> <span class="nb">can play Bach.</span> <em>Only you <span class="nb">can play you.</span></em>', // broken like the Romanian, so both take the same number of lines
+      what: "Piano lessons",
+      where: "Bucharest",
+      lede: "I’m Vlad and I teach piano. I’ll teach you sheet music, I’ll teach you some Bach, but above all, I’ll teach you to play what you feel, what you think and who you are. A universe of your own.",
+      lead: "Let’s build it together.",
+      wa: '<span class="wide">Message me on </span>WhatsApp',
+      call: "Call me",
+      copy: "Copy",
+      copied: "Copied",
+      selected: "Selected",
+      hint: "Touch the keys, play what you feel.",
+      takeText: 'No one has ever played this melody before. <span class="nb">It’s yours.</span>',
+      replay: "Play it again",
+      want: "I want lessons",
+      names: ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+      msgMain: "Hi Vlad! I saw your website and I’d like piano lessons.",
+      msgTake: (notes) => `Hi Vlad! I just played something on the piano on your website${notes ? `: ${notes}` : ""}. I’d like lessons.`,
+      yt: "Watch me play on YouTube",
+      theme: "Switch between light and dark",
+      close: "Close",
+      bed: "Playable piano. Touch the keys to play. On a computer you can also play with the keys from A to semicolon.",
+      other: ["RO", "Română", "ro"],
+    },
+  };
+  // Romanian unless the visitor picked English with the switch (remembered), or the address says ?lang=en / ?lang=ro.
+  let lang = "ro";
+  try { lang = localStorage.getItem("lang") === "en" ? "en" : "ro"; } catch (err) { /* storage is off */ }
+  const askedLang = new URLSearchParams(location.search).get("lang");
+  if (askedLang === "en" || askedLang === "ro") lang = askedLang;
+  const t = () => TEXT[lang];
   const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
 
@@ -804,14 +882,42 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
     $("wa").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(msg)}`;
     $("sms").href = `sms:+${PHONE}?&body=${encodeURIComponent(msg)}`;
   };
-  setMessage(MSG_MAIN);
-  $("waTake").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(msgTake(""))}`;
+
+  // Puts every word on the page into the current language. The layout is the same in both.
+  function applyLang() {
+    const w = t();
+    document.documentElement.lang = lang;
+    document.title = w.title;
+    $("headline").innerHTML = w.headline;
+    $("what").textContent = w.what;
+    $("where").textContent = w.where;
+    $("lede").textContent = w.lede;
+    $("lead").textContent = w.lead;
+    $("waText").innerHTML = w.wa;
+    $("call").textContent = w.call;
+    $("copy").textContent = w.copy;
+    $("hintText").textContent = w.hint;
+    $("takeText").innerHTML = w.takeText;
+    $("replayText").textContent = w.replay;
+    $("waTake").textContent = w.want;
+    $("yt").setAttribute("aria-label", w.yt);
+    $("theme").setAttribute("aria-label", w.theme);
+    $("takeClose").setAttribute("aria-label", w.close);
+    $("bed").setAttribute("aria-label", w.bed);
+    const [code, name, tag] = w.other;
+    $("lang").textContent = code;
+    $("lang").setAttribute("aria-label", name);
+    $("lang").lang = tag;
+    document.querySelectorAll(".do-name").forEach((el) => { el.textContent = w.names[0]; });
+    if (lastTake.length && !$("take").hidden) writeTake(); else setMessage(w.msgMain);
+    $("waTake").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(w.msgTake(lastTake.length ? takeLine() : ""))}`;
+  }
 
   const copyBtn = $("copy");
   copyBtn.addEventListener("click", () => {
     const show = (label) => {
       copyBtn.textContent = label;
-      setTimeout(() => { copyBtn.textContent = "Copiază"; }, 1800);
+      setTimeout(() => { copyBtn.textContent = t().copy; }, 1800);
     };
     const selectNumber = () => {
       const range = document.createRange();
@@ -819,10 +925,10 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
       const sel = getSelection();
       sel.removeAllRanges();
       sel.addRange(range);
-      show("Selectat");
+      show(t().selected);
     };
     try {
-      navigator.clipboard.writeText("0750199672").then(() => show("Copiat"), selectNumber);
+      navigator.clipboard.writeText("0750199672").then(() => show(t().copied), selectNumber);
     } catch (err) {
       selectNumber();
     }
@@ -1309,7 +1415,6 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
   }
 
   /* ---------- Keyboard layout ---------- */
-  const NAMES = ["Do", "Do#", "Re", "Re#", "Mi", "Fa", "Fa#", "Sol", "Sol#", "La", "La#", "Si"];
   const WHITE_STEPS = [0, 2, 4, 5, 7, 9, 11];
   const BLACK_OFFSET = { 0: -0.1, 1: 0.1, 3: -0.12, 4: 0, 5: 0.12 };
   const CODES = ["KeyA", "KeyW", "KeyS", "KeyE", "KeyD", "KeyF", "KeyT", "KeyG", "KeyY", "KeyH", "KeyU", "KeyJ", "KeyK", "KeyO", "KeyL", "KeyP", "Semicolon", "Quote"];
@@ -1369,7 +1474,12 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
         b.textContent = letter;
         label.append(b);
       }
-      if (isDo) label.append("Do");
+      if (isDo) {
+        const name = document.createElement("span");
+        name.className = "do-name";
+        name.textContent = t().names[0];
+        label.append(name);
+      }
       el.append(label);
     });
 
@@ -1502,13 +1612,21 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
     }, 1700);
   }
 
+  // The melody as note names, in the current language (Do Re Mi / C D E).
+  function takeLine() {
+    const names = lastTake.slice(0, 14).map((n) => t().names[n.midi % 12]);
+    return names.join(" · ") + (lastTake.length > 14 ? " …" : "");
+  }
+  function writeTake() {
+    const line = takeLine();
+    takeNotesEl.textContent = line;
+    $("waTake").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(t().msgTake(line))}`;
+    setMessage(t().msgTake(line));
+  }
+
   function showTake(notes) {
     lastTake = notes;
-    const names = notes.slice(0, 14).map((n) => NAMES[n.midi % 12]);
-    const line = names.join(" · ") + (notes.length > 14 ? " …" : "");
-    takeNotesEl.textContent = line;
-    $("waTake").href = `https://wa.me/${PHONE}?text=${encodeURIComponent(msgTake(line))}`;
-    setMessage(msgTake(line));
+    writeTake();
     pitchEl.classList.add("has-take");
     hintEl.hidden = true;
     takeEl.hidden = true;
@@ -1519,7 +1637,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
   $("takeClose").addEventListener("click", () => {
     takeEl.hidden = true;
     pitchEl.classList.remove("has-take");
-    setMessage(MSG_MAIN);
+    setMessage(t().msgMain);
     resumeGhost();
   });
 
@@ -1670,6 +1788,13 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
     resizeTimer = setTimeout(layout, 120);
   });
 
+  $("lang").addEventListener("click", () => {
+    lang = lang === "ro" ? "en" : "ro";
+    try { localStorage.setItem("lang", lang); } catch (err) { /* storage is off: the choice lasts for this visit */ }
+    applyLang();
+    if (!active.size) fit(); // a line may break differently in the other language
+  });
+
   $("theme").addEventListener("click", () => {
     const next = root.dataset.theme === "light" ? "dark" : "light";
     window.setTheme(next);
@@ -1677,6 +1802,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
     if (!active.size) fit(); // the two finishes space the text differently
   });
 
+  applyLang();
   layout();
   intro();
   // The display type arrives a moment later and changes how tall the text is.
