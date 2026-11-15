@@ -1496,6 +1496,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
     takeEl.hidden = true;
     pitchEl.classList.remove("has-take");
     setMessage(MSG_MAIN);
+    resumeGhost();
   });
 
   $("replay").addEventListener("click", () => {
@@ -1536,6 +1537,18 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
   function startGhost(delay) {
     if (reduceMotion) return;
     ghostTimers.push(setTimeout(() => { if (!awake) ghostLoop = setInterval(ghostNote, 600); }, delay));
+  }
+
+  // Closing the melody card hands the piano back: it plays by itself again until the next touch.
+  function resumeGhost() {
+    if (reduceMotion) return;
+    awake = false; // so the next touch stops it, exactly as the first one did
+    const begin = () => {
+      if (replaying || active.size) { ghostTimers.push(setTimeout(begin, 300)); return; } // let a replay or a held key finish
+      clearInterval(ghostLoop);
+      ghostLoop = setInterval(ghostNote, 600);
+    };
+    ghostTimers.push(setTimeout(begin, 700));
   }
 
   function wake() {
