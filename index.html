@@ -273,6 +273,19 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 .theme svg { width: 15px; height: 15px; display: block; }
 .theme::after { content: ""; position: absolute; inset: -8px; border-radius: 50%; } /* a finger-sized target */
 :root[data-theme="light"] .theme { transform: rotate(180deg); }
+/* YouTube link: the standard icon at its standard size, beside the switch. It takes no room of its own. */
+.yt {
+  position: absolute;
+  top: 13px;
+  right: 32px;
+  width: 28px;
+  height: 20px;
+  display: block;
+  transition: transform 0.15s, filter 0.2s;
+}
+.yt svg { width: 100%; height: 100%; display: block; }
+.yt:hover { filter: brightness(1.1); transform: scale(1.06); }
+.yt::after { content: ""; position: absolute; inset: -12px 0 -12px -10px; } /* a finger-sized target that stops short of the switch */
 h1 {
   margin: 0;
   min-width: 0;
@@ -490,6 +503,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
 :root:is([data-fit="2"], [data-fit="3"]) .brand { font-size: clamp(26px, 1.6vw + 20px, 36px); }
 :root:is([data-fit="2"], [data-fit="3"]) .face { width: 40px; }
 :root:is([data-fit="2"], [data-fit="3"]) .theme { top: 6px; }
+:root:is([data-fit="2"], [data-fit="3"]) .yt { top: 10px; }
 :root:is([data-fit="2"], [data-fit="3"]) h1 { font-size: clamp(25px, 2.9vw + 12px, 50px); }
 :root:is([data-fit="2"], [data-fit="3"]) .lede { font-size: 15px; line-height: 1.5; }
 :root:is([data-fit="2"], [data-fit="3"]) .sheet { row-gap: 11px; }
@@ -498,12 +512,16 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
 :root:is([data-fit="2"], [data-fit="3"]) :is(h1, .lede, .cta) { padding-block: 10px; }
 :root:is([data-fit="2"], [data-fit="3"]) .cta-lead { font-size: 22px; }
 :root:is([data-fit="2"], [data-fit="3"]) .btn { min-height: 44px; }
-:root[data-fit="3"] .plate { display: flex; justify-content: center; align-items: center; gap: 12px; padding-right: 24px; }
+:root[data-fit="3"] .plate { display: flex; justify-content: center; align-items: center; gap: 10px; padding-right: 62px; }
 :root[data-fit="3"] .brand::before, :root[data-fit="3"] .brand::after { display: none; }
 :root[data-fit="3"] .copy { padding-top: 8px; }
 :root[data-fit="3"] .face { width: 34px; }
 :root[data-fit="3"] .theme { top: 50%; margin-top: -14px; }
-:root[data-fit="3"] .eyebrow { letter-spacing: 0.12em; white-space: nowrap; }
+:root[data-fit="3"] .yt { top: 50%; margin-top: -10px; }
+:root[data-fit="3"] .eyebrow { min-width: 0; font-size: clamp(9px, 2.5vw, 11px); letter-spacing: 0.07em; white-space: nowrap; }
+@media (max-width: 345px) {
+  :root[data-fit="3"] .eyebrow { white-space: normal; text-align: left; line-height: 1.25; } /* the narrowest phones: two short lines */
+}
 :root[data-fit="3"] .sheet { row-gap: 10px; }
 :root[data-fit="3"] :is(.pitch, .say) { gap: 10px; }
 :root[data-fit="3"] :is(h1, .lede, .cta) { padding-block: 8px; }
@@ -701,6 +719,7 @@ h1 em { display: block; margin-top: 0.12em; font-style: italic; color: var(--acc
       <header class="plate">
         <p class="brand"><img class="face" src="vlad.jpg" alt="" width="48" height="48"><span>Vlad</span></p>
         <p class="eyebrow">Lecții de pian · București</p>
+        <a class="yt" href="https://www.youtube.com/watch?v=Ke5uTkKrvMk" target="_blank" rel="noopener" aria-label="Vezi-mă cântând pe YouTube"><svg viewBox="0 0 28.57 20" aria-hidden="true"><path fill="#f00" d="M27.973 3.123A3.578 3.578 0 0 0 25.447.597C23.22 0 14.285 0 14.285 0S5.35 0 3.123.597A3.578 3.578 0 0 0 .597 3.123C0 5.35 0 10 0 10s0 4.65.597 6.877a3.578 3.578 0 0 0 2.526 2.526C5.35 20 14.285 20 14.285 20s8.935 0 11.162-.597a3.578 3.578 0 0 0 2.526-2.526C28.57 14.65 28.57 10 28.57 10s-.002-4.65-.597-6.877Z"/><path fill="#fff" d="M11.425 14.285 18.848 10l-7.423-4.285v8.57Z"/></svg></a>
         <button class="theme" id="theme" type="button" aria-label="Schimbă tema: deschisă sau închisă"><svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.25" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M8 1.75a6.25 6.25 0 0 1 0 12.5Z" fill="currentColor"/></svg></button>
       </header>
 
